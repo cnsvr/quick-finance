@@ -1,0 +1,67 @@
+// Finance Tracker - Simple MVP Schema
+// Phase 1: EXPENSE and INCOME only
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String   // Hashed with bcrypt
+  name      String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  transactions Transaction[]
+
+  @@map("users")
+}
+
+// Simple transaction model - EXPENSE or INCOME
+model Transaction {
+  id          String          @id @default(cuid())
+  userId      String
+
+  // Core fields
+  amount      Decimal         @db.Decimal(10, 2)
+  type        TransactionType // EXPENSE or INCOME
+  category    String          // "Coffee", "Groceries", "Salary", etc.
+  description String?
+
+  // Metadata
+  date        DateTime        @default(now())
+  source      DataSource      @default(MANUAL)
+
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  // Relations
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date])
+  @@index([userId, type])
+  @@index([userId, category])
+  @@map("transactions")
+}
+
+// Enums
+enum TransactionType {
+  EXPENSE  // Spending money
+  INCOME   // Earning money
+}
+
+enum DataSource {
+  MANUAL       // User typed it in
+  EMAIL        // Parsed from email (Phase 3)
+  OCR          // Scanned receipt (Phase 3)
+  VOICE        // Voice input (Phase 3)
+}

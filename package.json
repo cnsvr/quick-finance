@@ -1,0 +1,22 @@
+{
+  "name": "quickfinance",
+  "version": "1.0.0",
+  "description": "QuickFinance - Fast Personal Finance Tracking App",
+  "scripts": {
+    "backend:dev": "cd backend && npm run dev",
+    "backend:build": "cd backend && npm run build",
+    "backend:start": "cd backend && npm start",
+    "backend:test": "cd backend && npm test",
+    "mobile:dev": "cd mobile && npm start",
+    "mobile:ios": "cd mobile && npm run ios",
+    "mobile:android": "cd mobile && npm run android",
+    "mobile:test": "cd mobile && npm test",
+    "install:all": "npm install && cd backend && npm install && cd ../mobile && npm install"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/username/quickfinance.git"
+  },
+  "author": "",
+  "license": "ISC"
+}
