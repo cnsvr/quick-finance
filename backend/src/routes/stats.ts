@@ -60,11 +60,11 @@ router.get('/', authenticate, async (req: AuthRequest, res, next) => {
     });
 
     // Calculate budget
-    const totalIncome = monthlyIncome._sum.amount || 0;
-    const totalExpenses = monthlyExpenses._sum.amount || 0;
-    const available = Number(totalIncome) - Number(totalExpenses);
+    const totalIncome = Number(monthlyIncome._sum.amount || 0);
+    const totalExpenses = Number(monthlyExpenses._sum.amount || 0);
+    const available = totalIncome - totalExpenses;
     const spentPercentage = totalIncome > 0
-      ? Math.round((Number(totalExpenses) / Number(totalIncome)) * 100)
+      ? Math.round((totalExpenses / totalIncome) * 100)
       : 0;
 
     res.json({
@@ -86,13 +86,13 @@ router.get('/', authenticate, async (req: AuthRequest, res, next) => {
         categories: categoryBreakdown
           .map(cat => ({
             category: cat.category,
-            amount: cat._sum.amount || 0,
+            amount: Number(cat._sum.amount || 0),
             count: cat._count,
             percentage: totalExpenses > 0
-              ? Math.round((Number(cat._sum.amount || 0) / Number(totalExpenses)) * 100)
+              ? Math.round((Number(cat._sum.amount || 0) / totalExpenses) * 100)
               : 0,
           }))
-          .sort((a, b) => Number(b.amount) - Number(a.amount)),
+          .sort((a, b) => b.amount - a.amount),
       }
     });
   } catch (error) {
