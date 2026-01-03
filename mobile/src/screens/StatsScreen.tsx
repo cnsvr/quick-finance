@@ -9,10 +9,15 @@ import {
   SafeAreaView,
   TouchableOpacity,
   ActivityIndicator,
+  Dimensions,
 } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { PieChart } from 'react-native-chart-kit';
+import Share from 'react-native-share';
 import { apiService } from '../services/api';
+
+const screenWidth = Dimensions.get('window').width;
 
 interface Stats {
   monthly: {
@@ -105,6 +110,48 @@ export const StatsScreen = ({ onLogout }: StatsScreenProps) => {
     );
   };
 
+  const handleExportData = async () => {
+    try {
+      if (!stats) return;
+
+      // Generate CSV content
+      let csvContent = 'Category,Amount,Count,Percentage\n';
+      stats.categories.forEach(cat => {
+        csvContent += `${cat.category},${cat.amount},${cat.count},${cat.percentage}%\n`;
+      });
+
+      csvContent += `\nMonthly Summary\n`;
+      csvContent += `Income,${stats.monthly.income}\n`;
+      csvContent += `Expenses,${stats.monthly.expenses}\n`;
+      csvContent += `Available,${stats.monthly.available}\n`;
+      csvContent += `Spent Percentage,${stats.monthly.spentPercentage}%\n`;
+
+      await Share.open({
+        title: 'Export Transaction Data',
+        message: 'QuickFinance Transaction Report',
+        url: `data:text/csv;base64,${btoa(csvContent)}`,
+        subject: 'Transaction Report',
+        filename: `quickfinance-report-${new Date().toISOString().split('T')[0]}.csv`,
+      });
+    } catch (error: any) {
+      if (error.message !== 'User did not share') {
+        Alert.alert('Export Failed', 'Failed to export data. Please try again.');
+      }
+    }
+  };
+
+  // Prepare chart data
+  const chartData = stats?.categories.slice(0, 5).map((cat, index) => {
+    const colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'];
+    return {
+      name: cat.category,
+      amount: parseFloat(cat.amount),
+      color: colors[index % colors.length],
+      legendFontColor: '#7F7F7F',
+      legendFontSize: 12,
+    };
+  }) || [];
+
   if (loading) {
     return (
       <View style={styles.centered}>
@@ -135,11 +182,18 @@ export const StatsScreen = ({ onLogout }: StatsScreenProps) => {
           <Text style={styles.greeting}>Hello!</Text>
           <Text style={styles.userName}>{user?.name || 'User'}</Text>
         </View>
-        <TouchableOpacity
-          style={styles.logoutButton}
-          onPress={handleLogout}>
-          <Icon name="log-out-outline" size={24} color="#F44336" />
-        </TouchableOpacity>
+        <View style={styles.headerButtons}>
+          <TouchableOpacity
+            style={styles.exportButton}
+            onPress={handleExportData}>
+            <Icon name="download-outline" size={22} color="#2196F3" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.logoutButton}
+            onPress={handleLogout}>
+            <Icon name="log-out-outline" size={22} color="#F44336" />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView
@@ -206,20 +260,47 @@ export const StatsScreen = ({ onLogout }: StatsScreenProps) => {
         <Text style={styles.cardTitle}>Category Breakdown</Text>
 
         {stats.categories.length > 0 ? (
-          stats.categories.map((cat, index) => (
-            <View key={index} style={styles.categoryRow}>
-              <View style={styles.categoryLeft}>
-                <Text style={styles.categoryName}>{cat.category}</Text>
-                <Text style={styles.categoryCount}>{cat.count} transactions</Text>
+          <>
+            {/* Pie Chart */}
+            {chartData.length > 0 && (
+              <View style={styles.chartContainer}>
+                <PieChart
+                  data={chartData}
+                  width={screenWidth - 72}
+                  height={200}
+                  chartConfig={{
+                    color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+                  }}
+                  accessor="amount"
+                  backgroundColor="transparent"
+                  paddingLeft="0"
+                  absolute
+                />
               </View>
-              <View style={styles.categoryRight}>
-                <Text style={styles.categoryAmount}>
-                  ₺{parseFloat(cat.amount).toFixed(2)}
-                </Text>
-                <Text style={styles.categoryPercent}>{cat.percentage}%</Text>
+            )}
+
+            {/* Category List */}
+            {stats.categories.map((cat, index) => (
+              <View key={index} style={styles.categoryRow}>
+                <View style={styles.categoryLeft}>
+                  <View style={[
+                    styles.categoryDot,
+                    { backgroundColor: chartData[index]?.color || '#999' }
+                  ]} />
+                  <View>
+                    <Text style={styles.categoryName}>{cat.category}</Text>
+                    <Text style={styles.categoryCount}>{cat.count} transactions</Text>
+                  </View>
+                </View>
+                <View style={styles.categoryRight}>
+                  <Text style={styles.categoryAmount}>
+                    ₺{parseFloat(cat.amount).toFixed(2)}
+                  </Text>
+                  <Text style={styles.categoryPercent}>{cat.percentage}%</Text>
+                </View>
               </View>
-            </View>
-          ))
+            ))}
+          </>
         ) : (
           <Text style={styles.noData}>No expenses yet</Text>
         )}
@@ -253,6 +334,13 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#000',
     marginTop: 2,
+  },
+  headerButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  exportButton: {
+    padding: 8,
   },
   logoutButton: {
     padding: 8,
@@ -364,8 +452,20 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#f5f5f5',
   },
+  chartContainer: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
   categoryLeft: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  categoryDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
   },
   categoryName: {
     fontSize: 16,

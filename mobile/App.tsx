@@ -10,6 +10,7 @@ import { RegisterScreen } from './src/screens/RegisterScreen';
 import { QuickEntryScreen } from './src/screens/QuickEntryScreen';
 import { TransactionListScreen } from './src/screens/TransactionListScreen';
 import { StatsScreen } from './src/screens/StatsScreen';
+import { BudgetGoalsScreen } from './src/screens/BudgetGoalsScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -24,6 +25,8 @@ function MainTabs({ onLogout }: { onLogout: () => void }) {
             iconName = focused ? 'add-circle' : 'add-circle-outline';
           } else if (route.name === 'History') {
             iconName = focused ? 'list' : 'list-outline';
+          } else if (route.name === 'Budget') {
+            iconName = focused ? 'wallet' : 'wallet-outline';
           } else if (route.name === 'Stats') {
             iconName = focused ? 'stats-chart' : 'stats-chart-outline';
           }
@@ -36,6 +39,7 @@ function MainTabs({ onLogout }: { onLogout: () => void }) {
       })}>
       <Tab.Screen name="Quick Entry" component={QuickEntryScreen} />
       <Tab.Screen name="History" component={TransactionListScreen} />
+      <Tab.Screen name="Budget" component={BudgetGoalsScreen} />
       <Tab.Screen name="Stats">
         {() => <StatsScreen onLogout={onLogout} />}
       </Tab.Screen>

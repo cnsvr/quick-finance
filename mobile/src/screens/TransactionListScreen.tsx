@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -14,6 +14,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
+import Icon from 'react-native-vector-icons/Ionicons';
 import { apiService } from '../services/api';
 
 interface Transaction {
@@ -25,6 +26,8 @@ interface Transaction {
   date: string;
 }
 
+type DateFilter = 'all' | 'week' | 'month' | 'custom';
+
 export const TransactionListScreen = () => {
   const isFocused = useIsFocused();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -33,6 +36,9 @@ export const TransactionListScreen = () => {
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [editAmount, setEditAmount] = useState('');
   const [editCategory, setEditCategory] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [dateFilter, setDateFilter] = useState<DateFilter>('all');
+  const [showFilterModal, setShowFilterModal] = useState(false);
 
   useEffect(() => {
     loadTransactions();
@@ -129,6 +135,49 @@ export const TransactionListScreen = () => {
     );
   };
 
+  // Filter transactions based on date filter and search query
+  const filteredTransactions = useMemo(() => {
+    let filtered = [...transactions];
+
+    // Apply date filter
+    if (dateFilter !== 'all') {
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+      filtered = filtered.filter(t => {
+        const transactionDate = new Date(t.date);
+        const transactionDay = new Date(
+          transactionDate.getFullYear(),
+          transactionDate.getMonth(),
+          transactionDate.getDate()
+        );
+
+        if (dateFilter === 'week') {
+          const weekAgo = new Date(today);
+          weekAgo.setDate(weekAgo.getDate() - 7);
+          return transactionDay >= weekAgo;
+        } else if (dateFilter === 'month') {
+          const monthAgo = new Date(today);
+          monthAgo.setMonth(monthAgo.getMonth() - 1);
+          return transactionDay >= monthAgo;
+        }
+        return true;
+      });
+    }
+
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(t =>
+        t.category.toLowerCase().includes(query) ||
+        t.amount.includes(query) ||
+        (t.description && t.description.toLowerCase().includes(query))
+      );
+    }
+
+    return filtered;
+  }, [transactions, dateFilter, searchQuery]);
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const today = new Date();
@@ -183,12 +232,51 @@ export const TransactionListScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Transaction History</Text>
-        <Text style={styles.count}>{transactions.length} transactions</Text>
+        <View style={styles.headerTop}>
+          <Text style={styles.title}>Transactions</Text>
+          <TouchableOpacity
+            style={styles.filterButton}
+            onPress={() => setShowFilterModal(true)}>
+            <Icon name="filter" size={20} color="#2196F3" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Search Bar */}
+        <View style={styles.searchContainer}>
+          <Icon name="search" size={20} color="#999" style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search transactions..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholderTextColor="#999"
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <Icon name="close-circle" size={20} color="#999" />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Active Filter Badge */}
+        {dateFilter !== 'all' && (
+          <View style={styles.filterBadge}>
+            <Text style={styles.filterBadgeText}>
+              {dateFilter === 'week' ? 'Last 7 days' : 'Last 30 days'}
+            </Text>
+            <TouchableOpacity onPress={() => setDateFilter('all')}>
+              <Icon name="close" size={16} color="#2196F3" />
+            </TouchableOpacity>
+          </View>
+        )}
+
+        <Text style={styles.count}>
+          {filteredTransactions.length} of {transactions.length} transactions
+        </Text>
       </View>
 
       <FlatList
-        data={transactions}
+        data={filteredTransactions}
         keyExtractor={item => item.id}
         renderItem={renderTransaction}
         refreshControl={
@@ -196,13 +284,74 @@ export const TransactionListScreen = () => {
         }
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Text style={styles.emptyText}>No transactions yet</Text>
-            <Text style={styles.emptySubtext}>Add your first expense to get started!</Text>
+            <Text style={styles.emptyText}>
+              {searchQuery || dateFilter !== 'all' ? 'No matching transactions' : 'No transactions yet'}
+            </Text>
+            <Text style={styles.emptySubtext}>
+              {searchQuery || dateFilter !== 'all'
+                ? 'Try adjusting your filters'
+                : 'Add your first expense to get started!'}
+            </Text>
           </View>
         }
       />
 
       <Text style={styles.hint}>Tap to edit • Long press to delete</Text>
+
+      {/* Filter Modal */}
+      <Modal
+        visible={showFilterModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowFilterModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Filter Transactions</Text>
+
+            <TouchableOpacity
+              style={[styles.filterOption, dateFilter === 'all' && styles.filterOptionActive]}
+              onPress={() => {
+                setDateFilter('all');
+                setShowFilterModal(false);
+              }}>
+              <Text style={[styles.filterOptionText, dateFilter === 'all' && styles.filterOptionTextActive]}>
+                All Time
+              </Text>
+              {dateFilter === 'all' && <Icon name="checkmark" size={20} color="#2196F3" />}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.filterOption, dateFilter === 'week' && styles.filterOptionActive]}
+              onPress={() => {
+                setDateFilter('week');
+                setShowFilterModal(false);
+              }}>
+              <Text style={[styles.filterOptionText, dateFilter === 'week' && styles.filterOptionTextActive]}>
+                Last 7 Days
+              </Text>
+              {dateFilter === 'week' && <Icon name="checkmark" size={20} color="#2196F3" />}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.filterOption, dateFilter === 'month' && styles.filterOptionActive]}
+              onPress={() => {
+                setDateFilter('month');
+                setShowFilterModal(false);
+              }}>
+              <Text style={[styles.filterOptionText, dateFilter === 'month' && styles.filterOptionTextActive]}>
+                Last 30 Days
+              </Text>
+              {dateFilter === 'month' && <Icon name="checkmark" size={20} color="#2196F3" />}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.modalButton, styles.cancelButton]}
+              onPress={() => setShowFilterModal(false)}>
+              <Text style={styles.cancelButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       {/* Edit Modal */}
       <Modal
@@ -269,16 +418,62 @@ const styles = StyleSheet.create({
     padding: 20,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
+    backgroundColor: '#fff',
+  },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#000',
   },
+  filterButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: '#f5f5f5',
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    paddingVertical: 10,
+    fontSize: 16,
+    color: '#000',
+  },
+  filterBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E3F2FD',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    alignSelf: 'flex-start',
+    marginTop: 4,
+    gap: 8,
+  },
+  filterBadgeText: {
+    color: '#2196F3',
+    fontSize: 12,
+    fontWeight: '600',
+  },
   count: {
     fontSize: 14,
     color: '#666',
-    marginTop: 4,
+    marginTop: 8,
   },
   transactionItem: {
     flexDirection: 'row',
@@ -404,5 +599,25 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '600',
     fontSize: 16,
+  },
+  filterOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 8,
+    backgroundColor: '#f9f9f9',
+  },
+  filterOptionActive: {
+    backgroundColor: '#E3F2FD',
+  },
+  filterOptionText: {
+    fontSize: 16,
+    color: '#666',
+  },
+  filterOptionTextActive: {
+    color: '#2196F3',
+    fontWeight: '600',
   },
 });
