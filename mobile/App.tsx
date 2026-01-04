@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { SafeAreaView, StatusBar, StyleSheet, View, Text } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@react-native-vector-icons/ionicons';
+import LottieView from 'lottie-react-native';
 
 import { LoginScreen } from './src/screens/LoginScreen';
 import { RegisterScreen } from './src/screens/RegisterScreen';
@@ -55,9 +56,15 @@ function App(): React.JSX.Element {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [showSplash, setShowSplash] = useState(true);
+  const animationRef = useRef<LottieView>(null);
 
   useEffect(() => {
     checkAuth();
+    // Show splash for minimum 2.5 seconds
+    setTimeout(() => {
+      setShowSplash(false);
+    }, 2500);
   }, []);
 
   const checkAuth = async () => {
@@ -79,13 +86,17 @@ function App(): React.JSX.Element {
     setIsAuthenticated(false);
   };
 
-  if (isLoading) {
+  if (showSplash || isLoading) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <Text>Loading...</Text>
-        </View>
-      </SafeAreaView>
+      <View style={styles.splashContainer}>
+        <LottieView
+          ref={animationRef}
+          source={require('./src/assets/money-animation.json')}
+          autoPlay
+          loop
+          style={styles.lottieAnimation}
+        />
+      </View>
     );
   }
 
@@ -118,6 +129,16 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  splashContainer: {
+    flex: 1,
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  lottieAnimation: {
+    width: 300,
+    height: 300,
   },
 });
 
