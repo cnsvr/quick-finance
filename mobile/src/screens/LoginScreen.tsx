@@ -115,7 +115,7 @@ export const LoginScreen = ({ onLoginSuccess, onNavigateToRegister }: LoginScree
           <View style={styles.googleButtonContainer}>
             <GoogleSigninButton
               size={GoogleSigninButton.Size.Wide}
-              color={GoogleSigninButton.Color.Light}
+              color={GoogleSigninButton.Color.Dark}
               onPress={handleGoogleSignIn}
               disabled={loading}
               style={styles.googleButton}
@@ -228,6 +228,6 @@ const styles = StyleSheet.create({
   googleButton: {
     width: '100%',
     height: 56,
-    borderRadius: 12,
+    borderRadius: 12
   },
 });

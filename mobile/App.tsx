@@ -11,7 +11,7 @@ import { RegisterScreen } from './src/screens/RegisterScreen';
 import { QuickEntryScreen } from './src/screens/QuickEntryScreen';
 import { TransactionListScreen } from './src/screens/TransactionListScreen';
 import { StatsScreen } from './src/screens/StatsScreen';
-import { BudgetGoalsScreen } from './src/screens/BudgetGoalsScreen';
+import { RecurringTransactionsScreen } from './src/screens/RecurringTransactionsScreen';
 import { ProfileScreen } from './src/screens/ProfileScreen';
 
 const Tab = createBottomTabNavigator();
@@ -27,8 +27,8 @@ function MainTabs({ onLogout }: { onLogout: () => void }) {
             iconName = focused ? 'add-circle' : 'add-circle-outline';
           } else if (route.name === 'History') {
             iconName = focused ? 'list' : 'list-outline';
-          } else if (route.name === 'Budget') {
-            iconName = focused ? 'wallet' : 'wallet-outline';
+          } else if (route.name === 'Recurring') {
+            iconName = focused ? 'repeat' : 'repeat-outline';
           } else if (route.name === 'Stats') {
             iconName = focused ? 'stats-chart' : 'stats-chart-outline';
           } else if (route.name === 'Profile') {
@@ -43,7 +43,7 @@ function MainTabs({ onLogout }: { onLogout: () => void }) {
       })}>
       <Tab.Screen name="Quick Entry" component={QuickEntryScreen} />
       <Tab.Screen name="History" component={TransactionListScreen} />
-      <Tab.Screen name="Budget" component={BudgetGoalsScreen} />
+      <Tab.Screen name="Recurring" component={RecurringTransactionsScreen} />
       <Tab.Screen name="Stats" component={StatsScreen} />
       <Tab.Screen name="Profile">
         {() => <ProfileScreen onLogout={onLogout} />}

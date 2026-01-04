@@ -27,6 +27,8 @@ interface Transaction {
 }
 
 type DateFilter = 'all' | 'week' | 'month' | 'custom';
+type TypeFilter = 'all' | 'EXPENSE' | 'INCOME';
+type SortOption = 'date-desc' | 'date-asc' | 'amount-desc' | 'amount-asc';
 
 export const TransactionListScreen = () => {
   const isFocused = useIsFocused();
@@ -38,6 +40,9 @@ export const TransactionListScreen = () => {
   const [editCategory, setEditCategory] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [dateFilter, setDateFilter] = useState<DateFilter>('all');
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [sortOption, setSortOption] = useState<SortOption>('date-desc');
   const [showFilterModal, setShowFilterModal] = useState(false);
 
   useEffect(() => {
@@ -135,7 +140,14 @@ export const TransactionListScreen = () => {
     );
   };
 
-  // Filter transactions based on date filter and search query
+  // Get unique categories
+  const categories = useMemo(() => {
+    const cats = new Set<string>();
+    transactions.forEach(t => cats.add(t.category));
+    return Array.from(cats).sort();
+  }, [transactions]);
+
+  // Filter and sort transactions
   const filteredTransactions = useMemo(() => {
     let filtered = [...transactions];
 
@@ -165,6 +177,16 @@ export const TransactionListScreen = () => {
       });
     }
 
+    // Apply type filter
+    if (typeFilter !== 'all') {
+      filtered = filtered.filter(t => t.type === typeFilter);
+    }
+
+    // Apply category filter
+    if (categoryFilter !== 'all') {
+      filtered = filtered.filter(t => t.category === categoryFilter);
+    }
+
     // Apply search filter
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
@@ -175,8 +197,24 @@ export const TransactionListScreen = () => {
       );
     }
 
+    // Apply sorting
+    filtered.sort((a, b) => {
+      switch (sortOption) {
+        case 'date-desc':
+          return new Date(b.date).getTime() - new Date(a.date).getTime();
+        case 'date-asc':
+          return new Date(a.date).getTime() - new Date(b.date).getTime();
+        case 'amount-desc':
+          return parseFloat(b.amount) - parseFloat(a.amount);
+        case 'amount-asc':
+          return parseFloat(a.amount) - parseFloat(b.amount);
+        default:
+          return 0;
+      }
+    });
+
     return filtered;
-  }, [transactions, dateFilter, searchQuery]);
+  }, [transactions, dateFilter, typeFilter, categoryFilter, searchQuery, sortOption]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -258,17 +296,37 @@ export const TransactionListScreen = () => {
           )}
         </View>
 
-        {/* Active Filter Badge */}
-        {dateFilter !== 'all' && (
-          <View style={styles.filterBadge}>
-            <Text style={styles.filterBadgeText}>
-              {dateFilter === 'week' ? 'Last 7 days' : 'Last 30 days'}
-            </Text>
-            <TouchableOpacity onPress={() => setDateFilter('all')}>
-              <Ionicons name="close" size={16} color="#2196F3" />
-            </TouchableOpacity>
-          </View>
-        )}
+        {/* Active Filter Badges */}
+        <View style={styles.filterBadgesContainer}>
+          {dateFilter !== 'all' && (
+            <View style={styles.filterBadge}>
+              <Text style={styles.filterBadgeText}>
+                {dateFilter === 'week' ? 'Last 7 days' : 'Last 30 days'}
+              </Text>
+              <TouchableOpacity onPress={() => setDateFilter('all')}>
+                <Ionicons name="close" size={14} color="#2196F3" />
+              </TouchableOpacity>
+            </View>
+          )}
+          {typeFilter !== 'all' && (
+            <View style={styles.filterBadge}>
+              <Text style={styles.filterBadgeText}>
+                {typeFilter === 'INCOME' ? 'Income' : 'Expenses'}
+              </Text>
+              <TouchableOpacity onPress={() => setTypeFilter('all')}>
+                <Ionicons name="close" size={14} color="#2196F3" />
+              </TouchableOpacity>
+            </View>
+          )}
+          {categoryFilter !== 'all' && (
+            <View style={styles.filterBadge}>
+              <Text style={styles.filterBadgeText}>{categoryFilter}</Text>
+              <TouchableOpacity onPress={() => setCategoryFilter('all')}>
+                <Ionicons name="close" size={14} color="#2196F3" />
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
 
         <Text style={styles.count}>
           {filteredTransactions.length} of {transactions.length} transactions
@@ -306,49 +364,130 @@ export const TransactionListScreen = () => {
         onRequestClose={() => setShowFilterModal(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Filter Transactions</Text>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <Text style={styles.modalTitle}>Filter & Sort</Text>
 
-            <TouchableOpacity
-              style={[styles.filterOption, dateFilter === 'all' && styles.filterOptionActive]}
-              onPress={() => {
-                setDateFilter('all');
-                setShowFilterModal(false);
-              }}>
-              <Text style={[styles.filterOptionText, dateFilter === 'all' && styles.filterOptionTextActive]}>
-                All Time
-              </Text>
-              {dateFilter === 'all' && <Ionicons name="checkmark" size={20} color="#2196F3" />}
-            </TouchableOpacity>
+              {/* Date Filter */}
+              <Text style={styles.filterSectionTitle}>Date Range</Text>
+              <TouchableOpacity
+                style={[styles.filterOption, dateFilter === 'all' && styles.filterOptionActive]}
+                onPress={() => setDateFilter('all')}>
+                <Text style={[styles.filterOptionText, dateFilter === 'all' && styles.filterOptionTextActive]}>
+                  All Time
+                </Text>
+                {dateFilter === 'all' && <Ionicons name="checkmark" size={20} color="#2196F3" />}
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.filterOption, dateFilter === 'week' && styles.filterOptionActive]}
+                onPress={() => setDateFilter('week')}>
+                <Text style={[styles.filterOptionText, dateFilter === 'week' && styles.filterOptionTextActive]}>
+                  Last 7 Days
+                </Text>
+                {dateFilter === 'week' && <Ionicons name="checkmark" size={20} color="#2196F3" />}
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.filterOption, dateFilter === 'month' && styles.filterOptionActive]}
+                onPress={() => setDateFilter('month')}>
+                <Text style={[styles.filterOptionText, dateFilter === 'month' && styles.filterOptionTextActive]}>
+                  Last 30 Days
+                </Text>
+                {dateFilter === 'month' && <Ionicons name="checkmark" size={20} color="#2196F3" />}
+              </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[styles.filterOption, dateFilter === 'week' && styles.filterOptionActive]}
-              onPress={() => {
-                setDateFilter('week');
-                setShowFilterModal(false);
-              }}>
-              <Text style={[styles.filterOptionText, dateFilter === 'week' && styles.filterOptionTextActive]}>
-                Last 7 Days
-              </Text>
-              {dateFilter === 'week' && <Ionicons name="checkmark" size={20} color="#2196F3" />}
-            </TouchableOpacity>
+              {/* Type Filter */}
+              <Text style={styles.filterSectionTitle}>Transaction Type</Text>
+              <TouchableOpacity
+                style={[styles.filterOption, typeFilter === 'all' && styles.filterOptionActive]}
+                onPress={() => setTypeFilter('all')}>
+                <Text style={[styles.filterOptionText, typeFilter === 'all' && styles.filterOptionTextActive]}>
+                  All Types
+                </Text>
+                {typeFilter === 'all' && <Ionicons name="checkmark" size={20} color="#2196F3" />}
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.filterOption, typeFilter === 'EXPENSE' && styles.filterOptionActive]}
+                onPress={() => setTypeFilter('EXPENSE')}>
+                <Text style={[styles.filterOptionText, typeFilter === 'EXPENSE' && styles.filterOptionTextActive]}>
+                  Expenses Only
+                </Text>
+                {typeFilter === 'EXPENSE' && <Ionicons name="checkmark" size={20} color="#2196F3" />}
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.filterOption, typeFilter === 'INCOME' && styles.filterOptionActive]}
+                onPress={() => setTypeFilter('INCOME')}>
+                <Text style={[styles.filterOptionText, typeFilter === 'INCOME' && styles.filterOptionTextActive]}>
+                  Income Only
+                </Text>
+                {typeFilter === 'INCOME' && <Ionicons name="checkmark" size={20} color="#2196F3" />}
+              </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[styles.filterOption, dateFilter === 'month' && styles.filterOptionActive]}
-              onPress={() => {
-                setDateFilter('month');
-                setShowFilterModal(false);
-              }}>
-              <Text style={[styles.filterOptionText, dateFilter === 'month' && styles.filterOptionTextActive]}>
-                Last 30 Days
-              </Text>
-              {dateFilter === 'month' && <Ionicons name="checkmark" size={20} color="#2196F3" />}
-            </TouchableOpacity>
+              {/* Category Filter */}
+              {categories.length > 0 && (
+                <>
+                  <Text style={styles.filterSectionTitle}>Category</Text>
+                  <TouchableOpacity
+                    style={[styles.filterOption, categoryFilter === 'all' && styles.filterOptionActive]}
+                    onPress={() => setCategoryFilter('all')}>
+                    <Text style={[styles.filterOptionText, categoryFilter === 'all' && styles.filterOptionTextActive]}>
+                      All Categories
+                    </Text>
+                    {categoryFilter === 'all' && <Ionicons name="checkmark" size={20} color="#2196F3" />}
+                  </TouchableOpacity>
+                  {categories.map((cat) => (
+                    <TouchableOpacity
+                      key={cat}
+                      style={[styles.filterOption, categoryFilter === cat && styles.filterOptionActive]}
+                      onPress={() => setCategoryFilter(cat)}>
+                      <Text style={[styles.filterOptionText, categoryFilter === cat && styles.filterOptionTextActive]}>
+                        {cat}
+                      </Text>
+                      {categoryFilter === cat && <Ionicons name="checkmark" size={20} color="#2196F3" />}
+                    </TouchableOpacity>
+                  ))}
+                </>
+              )}
 
-            <TouchableOpacity
-              style={[styles.modalButton, styles.cancelButton]}
-              onPress={() => setShowFilterModal(false)}>
-              <Text style={styles.cancelButtonText}>Close</Text>
-            </TouchableOpacity>
+              {/* Sort Options */}
+              <Text style={styles.filterSectionTitle}>Sort By</Text>
+              <TouchableOpacity
+                style={[styles.filterOption, sortOption === 'date-desc' && styles.filterOptionActive]}
+                onPress={() => setSortOption('date-desc')}>
+                <Text style={[styles.filterOptionText, sortOption === 'date-desc' && styles.filterOptionTextActive]}>
+                  Newest First
+                </Text>
+                {sortOption === 'date-desc' && <Ionicons name="checkmark" size={20} color="#2196F3" />}
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.filterOption, sortOption === 'date-asc' && styles.filterOptionActive]}
+                onPress={() => setSortOption('date-asc')}>
+                <Text style={[styles.filterOptionText, sortOption === 'date-asc' && styles.filterOptionTextActive]}>
+                  Oldest First
+                </Text>
+                {sortOption === 'date-asc' && <Ionicons name="checkmark" size={20} color="#2196F3" />}
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.filterOption, sortOption === 'amount-desc' && styles.filterOptionActive]}
+                onPress={() => setSortOption('amount-desc')}>
+                <Text style={[styles.filterOptionText, sortOption === 'amount-desc' && styles.filterOptionTextActive]}>
+                  Highest Amount
+                </Text>
+                {sortOption === 'amount-desc' && <Ionicons name="checkmark" size={20} color="#2196F3" />}
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.filterOption, sortOption === 'amount-asc' && styles.filterOptionActive]}
+                onPress={() => setSortOption('amount-asc')}>
+                <Text style={[styles.filterOptionText, sortOption === 'amount-asc' && styles.filterOptionTextActive]}>
+                  Lowest Amount
+                </Text>
+                {sortOption === 'amount-asc' && <Ionicons name="checkmark" size={20} color="#2196F3" />}
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.modalButton, styles.saveButton]}
+                onPress={() => setShowFilterModal(false)}>
+                <Text style={styles.saveButtonText}>Apply Filters</Text>
+              </TouchableOpacity>
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -454,21 +593,32 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#000',
   },
+  filterBadgesContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 8,
+  },
   filterBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#E3F2FD',
-    borderRadius: 20,
+    borderRadius: 16,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    alignSelf: 'flex-start',
-    marginTop: 4,
-    gap: 8,
+    gap: 6,
   },
   filterBadgeText: {
     color: '#2196F3',
     fontSize: 12,
     fontWeight: '600',
+  },
+  filterSectionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#000',
+    marginTop: 16,
+    marginBottom: 12,
   },
   count: {
     fontSize: 14,

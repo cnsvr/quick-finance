@@ -321,4 +321,31 @@ router.patch('/profile', authenticate, async (req: AuthRequest, res, next) => {
   }
 });
 
+// Delete account
+router.delete('/account', authenticate, async (req: AuthRequest, res, next) => {
+  try {
+    // Check if user exists
+    const user = await prisma.user.findUnique({
+      where: { id: req.userId },
+    });
+
+    if (!user) {
+      throw new AppError(404, 'User not found');
+    }
+
+    // Delete user - this will cascade delete all related data
+    // (transactions, recurring transactions, etc.) due to Prisma schema onDelete: Cascade
+    await prisma.user.delete({
+      where: { id: req.userId },
+    });
+
+    res.json({
+      status: 'success',
+      message: 'Account permanently deleted',
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 export { router as authRouter };

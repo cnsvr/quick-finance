@@ -30,9 +30,30 @@ model User {
   updatedAt    DateTime     @updatedAt
 
   // Relations
-  transactions Transaction[]
+  transactions          Transaction[]
+  recurringTransactions RecurringTransaction[]
+  favoriteCategories    FavoriteCategory[]
 
   @@map("users")
+}
+
+// Favorite categories for quick access
+model FavoriteCategory {
+  id        String          @id @default(cuid())
+  userId    String
+  category  String
+  emoji     String
+  type      TransactionType // EXPENSE or INCOME
+  order     Int             @default(0) // Display order
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, category, type])
+  @@index([userId, type, order])
+  @@map("favorite_categories")
 }
 
 // Simple transaction model - EXPENSE or INCOME
@@ -79,4 +100,40 @@ enum AuthProvider {
   EMAIL        // Email/password authentication
   GOOGLE       // Google OAuth
   LINKED       // Account has both email/password and Google linked
+}
+
+// Recurring transaction template
+model RecurringTransaction {
+  id          String          @id @default(cuid())
+  userId      String
+
+  // Core fields
+  amount      Decimal         @db.Decimal(10, 2)
+  type        TransactionType
+  category    String
+  description String?
+
+  // Recurrence settings
+  frequency   Frequency       // DAILY, WEEKLY, MONTHLY, YEARLY
+  interval    Int             @default(1) // Every X days/weeks/months
+  startDate   DateTime
+  endDate     DateTime?       // Optional end date
+  nextRun     DateTime        // Next time to create transaction
+  isActive    Boolean         @default(true)
+
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  // Relations
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isActive, nextRun])
+  @@map("recurring_transactions")
+}
+
+enum Frequency {
+  DAILY
+  WEEKLY
+  MONTHLY
+  YEARLY
 }

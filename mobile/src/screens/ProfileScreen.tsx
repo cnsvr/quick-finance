@@ -78,6 +78,58 @@ export const ProfileScreen = ({ onLogout }: ProfileScreenProps) => {
     );
   };
 
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Delete Account',
+      'Are you sure you want to delete your account? This action cannot be undone and will permanently delete:\n\n• All your transactions\n• All recurring transactions\n• Your profile data\n• All associated data',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete Account',
+          style: 'destructive',
+          onPress: confirmDeleteAccount,
+        },
+      ]
+    );
+  };
+
+  const confirmDeleteAccount = () => {
+    Alert.alert(
+      'Final Confirmation',
+      'This is your last chance. Are you absolutely sure you want to delete your account?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Yes, Delete Forever',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await apiService.deleteAccount();
+              Alert.alert(
+                'Account Deleted',
+                'Your account has been permanently deleted.',
+                [
+                  {
+                    text: 'OK',
+                    onPress: async () => {
+                      await apiService.logout();
+                      onLogout?.();
+                    },
+                  },
+                ]
+              );
+            } catch (error: any) {
+              Alert.alert(
+                'Error',
+                error.response?.data?.message || 'Failed to delete account. Please try again.'
+              );
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const formatMemberSince = (date: string) => {
     return new Date(date).toLocaleDateString('en-US', {
       month: 'long',
@@ -97,6 +149,12 @@ export const ProfileScreen = ({ onLogout }: ProfileScreenProps) => {
     <SafeAreaView style={styles.container}>
       <ScrollView>
         <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.deleteButton}
+            onPress={handleDeleteAccount}>
+            <Ionicons name="trash-outline" size={22} color="#F44336" />
+          </TouchableOpacity>
+
           <View style={styles.avatarContainer}>
             <View style={styles.avatar}>
               <Ionicons name="person" size={48} color="#fff" />
@@ -192,6 +250,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
+    position: 'relative',
+  },
+  deleteButton: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    padding: 8,
+    zIndex: 10,
   },
   avatarContainer: {
     marginBottom: 12,

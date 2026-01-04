@@ -179,7 +179,7 @@ export const RegisterScreen = ({ onRegisterSuccess, onBackToLogin }: RegisterScr
             <View style={styles.googleButtonContainer}>
               <GoogleSigninButton
                 size={GoogleSigninButton.Size.Wide}
-                color={GoogleSigninButton.Color.Light}
+                color={GoogleSigninButton.Color.Dark}
                 onPress={handleGoogleSignIn}
                 disabled={loading}
                 style={styles.googleButton}

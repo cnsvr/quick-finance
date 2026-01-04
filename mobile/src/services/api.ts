@@ -91,6 +91,12 @@ export const apiService = {
     return response.data.data;
   },
 
+  // Get trend data
+  async getTrend() {
+    const response = await api.get('/stats/trend');
+    return response.data.data;
+  },
+
   // Get user info
   async getUserInfo() {
     const response = await api.get('/auth/me');
@@ -106,6 +112,94 @@ export const apiService = {
   // Logout
   async logout() {
     await AsyncStorage.removeItem('authToken');
+  },
+
+  // Delete Account
+  async deleteAccount() {
+    const response = await api.delete('/auth/account');
+    await AsyncStorage.removeItem('authToken');
+    return response.data;
+  },
+
+  // Recurring Transactions
+  async getRecurring() {
+    const response = await api.get('/recurring');
+    return response.data;
+  },
+
+  async createRecurring(data: {
+    amount: number;
+    type: 'EXPENSE' | 'INCOME';
+    category: string;
+    description?: string;
+    frequency: 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
+    interval: number;
+    startDate: string;
+    endDate?: string;
+  }) {
+    const response = await api.post('/recurring', data);
+    return response.data;
+  },
+
+  async updateRecurring(id: string, data: {
+    amount?: number;
+    category?: string;
+    description?: string;
+    frequency?: 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
+    interval?: number;
+    endDate?: string | null;
+    isActive?: boolean;
+  }) {
+    const response = await api.patch(`/recurring/${id}`, data);
+    return response.data;
+  },
+
+  async deleteRecurring(id: string) {
+    const response = await api.delete(`/recurring/${id}`);
+    return response.data;
+  },
+
+  async processRecurring() {
+    const response = await api.post('/recurring/process');
+    return response.data;
+  },
+
+  // Favorite Categories
+  async getFavoriteCategories(type?: 'EXPENSE' | 'INCOME') {
+    const response = await api.get('/categories/favorites', {
+      params: type ? { type } : {},
+    });
+    return response.data.data;
+  },
+
+  async addFavoriteCategory(data: {
+    category: string;
+    emoji: string;
+    type: 'EXPENSE' | 'INCOME';
+    order?: number;
+  }) {
+    const response = await api.post('/categories/favorites', data);
+    return response.data.data;
+  },
+
+  async updateFavoriteCategory(id: string, data: {
+    emoji?: string;
+    order?: number;
+  }) {
+    const response = await api.patch(`/categories/favorites/${id}`, data);
+    return response.data.data;
+  },
+
+  async deleteFavoriteCategory(id: string) {
+    const response = await api.delete(`/categories/favorites/${id}`);
+    return response.data;
+  },
+
+  async getAllCategories(type?: 'EXPENSE' | 'INCOME') {
+    const response = await api.get('/categories/all', {
+      params: type ? { type } : {},
+    });
+    return response.data.data;
   },
 };
 

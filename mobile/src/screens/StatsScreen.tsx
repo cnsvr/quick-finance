@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
 import { Ionicons } from '@react-native-vector-icons/ionicons';
-import { PieChart } from 'react-native-chart-kit';
+import { PieChart, LineChart } from 'react-native-chart-kit';
 import Share from 'react-native-share';
 import { apiService } from '../services/api';
 
@@ -37,6 +37,15 @@ interface Stats {
   }>;
 }
 
+interface TrendData {
+  trend: Array<{
+    month: string;
+    income: number;
+    expenses: number;
+    savings: number;
+  }>;
+}
+
 interface User {
   id: string;
   name: string;
@@ -46,6 +55,7 @@ interface User {
 export const StatsScreen = () => {
   const isFocused = useIsFocused();
   const [stats, setStats] = useState<Stats | null>(null);
+  const [trend, setTrend] = useState<TrendData | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -63,11 +73,13 @@ export const StatsScreen = () => {
 
   const loadData = async () => {
     try {
-      const [statsData, userData] = await Promise.all([
+      const [statsData, trendData, userData] = await Promise.all([
         apiService.getStats(),
+        apiService.getTrend(),
         apiService.getUserInfo(),
       ]);
       setStats(statsData);
+      setTrend(trendData);
       setUser(userData);
     } catch (error: any) {
       const message = error.response?.data?.message || 'Failed to load statistics. Please check your connection.';
@@ -271,6 +283,79 @@ export const StatsScreen = () => {
           <Text style={styles.noData}>No expenses yet</Text>
         )}
       </View>
+
+      {/* Income vs Expenses Trend */}
+      {trend && trend.trend.length > 0 && (
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>6-Month Trend</Text>
+
+          <View style={styles.chartContainer}>
+            <LineChart
+              data={{
+                labels: trend.trend.map(t => t.month),
+                datasets: [
+                  {
+                    data: trend.trend.map(t => t.income),
+                    color: (opacity = 1) => `rgba(76, 175, 80, ${opacity})`,
+                    strokeWidth: 2,
+                  },
+                  {
+                    data: trend.trend.map(t => t.expenses),
+                    color: (opacity = 1) => `rgba(244, 67, 54, ${opacity})`,
+                    strokeWidth: 2,
+                  },
+                ],
+                legend: ['Income', 'Expenses'],
+              }}
+              width={screenWidth - 72}
+              height={220}
+              chartConfig={{
+                backgroundColor: '#fff',
+                backgroundGradientFrom: '#fff',
+                backgroundGradientTo: '#fff',
+                decimalPlaces: 0,
+                color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+                labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+                style: {
+                  borderRadius: 16,
+                },
+                propsForDots: {
+                  r: '4',
+                  strokeWidth: '2',
+                },
+              }}
+              bezier
+              style={{
+                marginVertical: 8,
+                borderRadius: 16,
+              }}
+            />
+          </View>
+
+          {/* Savings Rate */}
+          <View style={styles.savingsContainer}>
+            <Text style={styles.savingsLabel}>Average Monthly Savings</Text>
+            <Text style={[
+              styles.savingsAmount,
+              {
+                color: trend.trend.reduce((sum, t) => sum + t.savings, 0) / trend.trend.length >= 0
+                  ? '#4CAF50'
+                  : '#F44336'
+              }
+            ]}>
+              ₺{(trend.trend.reduce((sum, t) => sum + t.savings, 0) / trend.trend.length).toFixed(2)}
+            </Text>
+            <Text style={styles.savingsSubtext}>
+              {(() => {
+                const avgIncome = trend.trend.reduce((sum, t) => sum + t.income, 0) / trend.trend.length;
+                const avgSavings = trend.trend.reduce((sum, t) => sum + t.savings, 0) / trend.trend.length;
+                const savingsRate = avgIncome > 0 ? (avgSavings / avgIncome) * 100 : 0;
+                return `${savingsRate.toFixed(1)}% savings rate`;
+              })()}
+            </Text>
+          </View>
+        </View>
+      )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -453,5 +538,26 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#999',
     padding: 20,
+  },
+  savingsContainer: {
+    marginTop: 20,
+    paddingTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+    alignItems: 'center',
+  },
+  savingsLabel: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 8,
+  },
+  savingsAmount: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  savingsSubtext: {
+    fontSize: 12,
+    color: '#999',
   },
 });

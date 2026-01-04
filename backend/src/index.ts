@@ -6,6 +6,8 @@ import dotenv from 'dotenv';
 import { authRouter } from './routes/auth';
 import { transactionRouter } from './routes/transactions';
 import { statsRouter } from './routes/stats';
+import { recurringRouter } from './routes/recurring';
+import { categoriesRouter } from './routes/categories';
 import { errorHandler } from './middleware/errorHandler';
 
 // Load environment variables
@@ -35,6 +37,8 @@ app.get('/health', (req, res) => {
 app.use('/api/auth', authRouter);
 app.use('/api/transactions', transactionRouter);
 app.use('/api/stats', statsRouter);
+app.use('/api/recurring', recurringRouter);
+app.use('/api/categories', categoriesRouter);
 
 // 404 handler
 app.use('*', (req, res) => {
