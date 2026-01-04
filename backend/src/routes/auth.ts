@@ -142,13 +142,16 @@ router.post('/google', async (req, res, next) => {
     const { email, name, sub: googleId } = payload;
 
     // Check if user exists
-    let user = await prisma.user.findUnique({ where: { email } });
+    let existingUser = await prisma.user.findUnique({ where: { email } });
 
-    if (!user) {
+    let userId: string;
+    let accountLinked = false;
+
+    if (!existingUser) {
       // Create new user with Google OAuth
       const randomPassword = await bcrypt.hash(Math.random().toString(36), 10);
 
-      user = await prisma.user.create({
+      const newUser = await prisma.user.create({
         data: {
           email,
           password: randomPassword,
@@ -158,45 +161,49 @@ router.post('/google', async (req, res, next) => {
         },
         select: {
           id: true,
-          email: true,
-          name: true,
-          createdAt: true,
         },
       });
+      userId = newUser.id;
     } else {
+      userId = existingUser.id;
+
       // User exists - handle account linking
-      if (user.authProvider === 'EMAIL') {
+      if (existingUser.authProvider === 'EMAIL') {
         // Email/password account trying to link with Google
         // Update to LINKED provider
-        user = await prisma.user.update({
-          where: { id: user.id },
+        await prisma.user.update({
+          where: { id: existingUser.id },
           data: {
             authProvider: 'LINKED',
             googleId,
           },
-          select: {
-            id: true,
-            email: true,
-            name: true,
-            createdAt: true,
-          },
         });
-      } else if (user.authProvider === 'GOOGLE' || user.authProvider === 'LINKED') {
+        accountLinked = true;
+      } else if (existingUser.authProvider === 'GOOGLE' || existingUser.authProvider === 'LINKED') {
         // Already a Google or linked account - just sign in
         // Update googleId in case it changed
-        if (user.googleId !== googleId) {
-          user = await prisma.user.update({
-            where: { id: user.id },
+        if (existingUser.googleId !== googleId) {
+          await prisma.user.update({
+            where: { id: existingUser.id },
             data: { googleId },
-            select: {
-              id: true,
-              email: true,
-              name: true,
-              createdAt: true,
-            },
           });
         }
+        accountLinked = existingUser.authProvider === 'LINKED';
       }
+    }
+
+    // Fetch the final user data
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+      },
+    });
+
+    if (!user) {
+      throw new AppError(500, 'Failed to retrieve user data');
     }
 
     // Generate JWT token
@@ -213,7 +220,7 @@ router.post('/google', async (req, res, next) => {
           name: user.name,
         },
         token,
-        accountLinked: user.authProvider === 'LINKED',
+        accountLinked,
       },
     });
   } catch (error) {
