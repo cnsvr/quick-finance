@@ -1,7 +1,10 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_URL = 'http://localhost:3000/api';
+const PROD_API_URL = 'https://quick-finance-1i2h.onrender.com/api';
+const DEV_API_URL = 'http://localhost:3000/api';
+
+const API_URL = __DEV__ ? DEV_API_URL : PROD_API_URL;
 
 const api = axios.create({
   baseURL: API_URL,
@@ -33,6 +36,14 @@ export const apiService = {
 
   async register(email: string, password: string, name: string) {
     const response = await api.post('/auth/register', { email, password, name });
+    if (response.data.data.token) {
+      await AsyncStorage.setItem('authToken', response.data.data.token);
+    }
+    return response.data;
+  },
+
+  async googleSignIn(idToken: string) {
+    const response = await api.post('/auth/google', { idToken });
     if (response.data.data.token) {
       await AsyncStorage.setItem('authToken', response.data.data.token);
     }
@@ -83,6 +94,12 @@ export const apiService = {
   // Get user info
   async getUserInfo() {
     const response = await api.get('/auth/me');
+    return response.data.data;
+  },
+
+  // Update user profile
+  async updateProfile(data: { firstName?: string; lastName?: string; name?: string }) {
+    const response = await api.patch('/auth/profile', data);
     return response.data.data;
   },
 

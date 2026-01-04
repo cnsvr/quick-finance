@@ -3,7 +3,7 @@ import { SafeAreaView, StatusBar, StyleSheet, View, Text } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Icon from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 
 import { LoginScreen } from './src/screens/LoginScreen';
 import { RegisterScreen } from './src/screens/RegisterScreen';
@@ -11,6 +11,7 @@ import { QuickEntryScreen } from './src/screens/QuickEntryScreen';
 import { TransactionListScreen } from './src/screens/TransactionListScreen';
 import { StatsScreen } from './src/screens/StatsScreen';
 import { BudgetGoalsScreen } from './src/screens/BudgetGoalsScreen';
+import { ProfileScreen } from './src/screens/ProfileScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -29,9 +30,11 @@ function MainTabs({ onLogout }: { onLogout: () => void }) {
             iconName = focused ? 'wallet' : 'wallet-outline';
           } else if (route.name === 'Stats') {
             iconName = focused ? 'stats-chart' : 'stats-chart-outline';
+          } else if (route.name === 'Profile') {
+            iconName = focused ? 'person' : 'person-outline';
           }
 
-          return <Icon name={iconName} size={size} color={color} />;
+          return <Ionicons name={iconName as any} size={size} color={color} />;
         },
         tabBarActiveTintColor: '#2196F3',
         tabBarInactiveTintColor: '#999',
@@ -40,8 +43,9 @@ function MainTabs({ onLogout }: { onLogout: () => void }) {
       <Tab.Screen name="Quick Entry" component={QuickEntryScreen} />
       <Tab.Screen name="History" component={TransactionListScreen} />
       <Tab.Screen name="Budget" component={BudgetGoalsScreen} />
-      <Tab.Screen name="Stats">
-        {() => <StatsScreen onLogout={onLogout} />}
+      <Tab.Screen name="Stats" component={StatsScreen} />
+      <Tab.Screen name="Profile">
+        {() => <ProfileScreen onLogout={onLogout} />}
       </Tab.Screen>
     </Tab.Navigator>
   );

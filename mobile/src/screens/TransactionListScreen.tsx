@@ -14,7 +14,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
-import Icon from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { apiService } from '../services/api';
 
 interface Transaction {
@@ -237,13 +237,13 @@ export const TransactionListScreen = () => {
           <TouchableOpacity
             style={styles.filterButton}
             onPress={() => setShowFilterModal(true)}>
-            <Icon name="filter" size={20} color="#2196F3" />
+            <Ionicons name="filter" size={20} color="#2196F3" />
           </TouchableOpacity>
         </View>
 
         {/* Search Bar */}
         <View style={styles.searchContainer}>
-          <Icon name="search" size={20} color="#999" style={styles.searchIcon} />
+          <Ionicons name="search" size={20} color="#999" style={styles.searchIcon} />
           <TextInput
             style={styles.searchInput}
             placeholder="Search transactions..."
@@ -253,7 +253,7 @@ export const TransactionListScreen = () => {
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Icon name="close-circle" size={20} color="#999" />
+              <Ionicons name="close-circle" size={20} color="#999" />
             </TouchableOpacity>
           )}
         </View>
@@ -265,7 +265,7 @@ export const TransactionListScreen = () => {
               {dateFilter === 'week' ? 'Last 7 days' : 'Last 30 days'}
             </Text>
             <TouchableOpacity onPress={() => setDateFilter('all')}>
-              <Icon name="close" size={16} color="#2196F3" />
+              <Ionicons name="close" size={16} color="#2196F3" />
             </TouchableOpacity>
           </View>
         )}
@@ -317,7 +317,7 @@ export const TransactionListScreen = () => {
               <Text style={[styles.filterOptionText, dateFilter === 'all' && styles.filterOptionTextActive]}>
                 All Time
               </Text>
-              {dateFilter === 'all' && <Icon name="checkmark" size={20} color="#2196F3" />}
+              {dateFilter === 'all' && <Ionicons name="checkmark" size={20} color="#2196F3" />}
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -329,7 +329,7 @@ export const TransactionListScreen = () => {
               <Text style={[styles.filterOptionText, dateFilter === 'week' && styles.filterOptionTextActive]}>
                 Last 7 Days
               </Text>
-              {dateFilter === 'week' && <Icon name="checkmark" size={20} color="#2196F3" />}
+              {dateFilter === 'week' && <Ionicons name="checkmark" size={20} color="#2196F3" />}
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -341,7 +341,7 @@ export const TransactionListScreen = () => {
               <Text style={[styles.filterOptionText, dateFilter === 'month' && styles.filterOptionTextActive]}>
                 Last 30 Days
               </Text>
-              {dateFilter === 'month' && <Icon name="checkmark" size={20} color="#2196F3" />}
+              {dateFilter === 'month' && <Ionicons name="checkmark" size={20} color="#2196F3" />}
             </TouchableOpacity>
 
             <TouchableOpacity

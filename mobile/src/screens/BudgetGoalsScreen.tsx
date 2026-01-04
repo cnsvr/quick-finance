@@ -11,7 +11,7 @@ import {
   SafeAreaView,
   ActivityIndicator,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiService } from '../services/api';
 
@@ -153,14 +153,14 @@ export const BudgetGoalsScreen = () => {
         <TouchableOpacity
           style={styles.addButton}
           onPress={() => setShowAddModal(true)}>
-          <Icon name="add-circle" size={28} color="#2196F3" />
+          <Ionicons name="add-circle" size={28} color="#2196F3" />
         </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.scrollView}>
         {budgetGoals.length === 0 ? (
           <View style={styles.emptyState}>
-            <Icon name="wallet-outline" size={64} color="#ccc" />
+            <Ionicons name="wallet-outline" size={64} color="#ccc" />
             <Text style={styles.emptyText}>No budget goals yet</Text>
             <Text style={styles.emptySubtext}>
               Set spending limits for your categories
@@ -176,7 +176,7 @@ export const BudgetGoalsScreen = () => {
             <View key={goal.id} style={styles.goalCard}>
               <View style={styles.goalHeader}>
                 <View style={styles.goalHeaderLeft}>
-                  <Icon
+                  <Ionicons
                     name={getStatusIcon(goal.percentage)}
                     size={24}
                     color={getStatusColor(goal.percentage)}
@@ -184,7 +184,7 @@ export const BudgetGoalsScreen = () => {
                   <Text style={styles.categoryName}>{goal.category}</Text>
                 </View>
                 <TouchableOpacity onPress={() => handleDeleteGoal(goal.id)}>
-                  <Icon name="trash-outline" size={20} color="#F44336" />
+                  <Ionicons name="trash-outline" size={20} color="#F44336" />
                 </TouchableOpacity>
               </View>
 
@@ -231,7 +231,7 @@ export const BudgetGoalsScreen = () => {
 
               {goal.percentage >= 80 && (
                 <View style={[styles.alert, { backgroundColor: goal.percentage >= 100 ? '#FFEBEE' : '#FFF3E0' }]}>
-                  <Icon
+                  <Ionicons
                     name={goal.percentage >= 100 ? 'alert-circle' : 'warning'}
                     size={16}
                     color={goal.percentage >= 100 ? '#F44336' : '#FF9800'}

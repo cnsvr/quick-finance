@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
   Platform,
   ScrollView,
 } from 'react-native';
+import { GoogleSignin, GoogleSigninButton } from '@react-native-google-signin/google-signin';
 import { apiService } from '../services/api';
 
 interface RegisterScreenProps {
@@ -25,6 +26,12 @@ export const RegisterScreen = ({ onRegisterSuccess, onBackToLogin }: RegisterScr
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    GoogleSignin.configure({
+      iosClientId: '1087603000982-o9lmlpie9ug9115n90m9aci9ppf9bkgl.apps.googleusercontent.com',
+    });
+  }, []);
 
   const handleRegister = async () => {
     // Validation
@@ -62,6 +69,26 @@ export const RegisterScreen = ({ onRegisterSuccess, onBackToLogin }: RegisterScr
     } catch (error: any) {
       const message = error.response?.data?.message || 'Registration failed. Please try again.';
       Alert.alert('Registration Failed', message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    try {
+      await GoogleSignin.hasPlayServices();
+      const userInfo = await GoogleSignin.signIn();
+
+      if (userInfo.data?.idToken) {
+        await apiService.googleSignIn(userInfo.data.idToken);
+        onRegisterSuccess();
+      } else {
+        Alert.alert('Error', 'Failed to get Google authentication token');
+      }
+    } catch (error: any) {
+      console.error('Google Sign-In Error:', error);
+      Alert.alert('Sign Up Failed', error.message || 'Failed to sign up with Google');
     } finally {
       setLoading(false);
     }
@@ -142,6 +169,22 @@ export const RegisterScreen = ({ onRegisterSuccess, onBackToLogin }: RegisterScr
                 <Text style={styles.registerButtonText}>Create Account</Text>
               )}
             </TouchableOpacity>
+
+            <View style={styles.divider}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>OR</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
+            <View style={styles.googleButtonContainer}>
+              <GoogleSigninButton
+                size={GoogleSigninButton.Size.Wide}
+                color={GoogleSigninButton.Color.Light}
+                onPress={handleGoogleSignIn}
+                disabled={loading}
+                style={styles.googleButton}
+              />
+            </View>
 
             <TouchableOpacity
               style={styles.backButton}
@@ -231,5 +274,30 @@ const styles = StyleSheet.create({
   backButtonTextBold: {
     color: '#2196F3',
     fontWeight: '600',
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 24,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#e0e0e0',
+  },
+  dividerText: {
+    marginHorizontal: 12,
+    color: '#999',
+    fontSize: 14,
+  },
+  googleButtonContainer: {
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  googleButton: {
+    width: '100%',
+    height: 56,
+    borderRadius: 12,
   },
 });

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { GoogleSignin, GoogleSigninButton } from '@react-native-google-signin/google-signin';
 import { apiService } from '../services/api';
 
 interface LoginScreenProps {
@@ -21,6 +22,12 @@ export const LoginScreen = ({ onLoginSuccess, onNavigateToRegister }: LoginScree
   const [email, setEmail] = useState('test@example.com'); // Pre-filled for demo
   const [password, setPassword] = useState('password123');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    GoogleSignin.configure({
+      iosClientId: '1087603000982-o9lmlpie9ug9115n90m9aci9ppf9bkgl.apps.googleusercontent.com',
+    });
+  }, []);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -39,12 +46,32 @@ export const LoginScreen = ({ onLoginSuccess, onNavigateToRegister }: LoginScree
     }
   };
 
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    try {
+      await GoogleSignin.hasPlayServices();
+      const userInfo = await GoogleSignin.signIn();
+
+      if (userInfo.data?.idToken) {
+        await apiService.googleSignIn(userInfo.data.idToken);
+        onLoginSuccess();
+      } else {
+        Alert.alert('Error', 'Failed to get Google authentication token');
+      }
+    } catch (error: any) {
+      console.error('Google Sign-In Error:', error);
+      Alert.alert('Sign In Failed', error.message || 'Failed to sign in with Google');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <View style={styles.content}>
-        <Text style={styles.title}>Finance Tracker</Text>
+        <Text style={styles.title}>Quick Finance</Text>
         <Text style={styles.subtitle}>Super-fast expense entry</Text>
 
         <View style={styles.form}>
@@ -78,6 +105,22 @@ export const LoginScreen = ({ onLoginSuccess, onNavigateToRegister }: LoginScree
           </TouchableOpacity>
 
           <Text style={styles.demo}>Demo credentials pre-filled</Text>
+
+          <View style={styles.divider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>OR</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
+          <View style={styles.googleButtonContainer}>
+            <GoogleSigninButton
+              size={GoogleSigninButton.Size.Wide}
+              color={GoogleSigninButton.Color.Light}
+              onPress={handleGoogleSignIn}
+              disabled={loading}
+              style={styles.googleButton}
+            />
+          </View>
 
           {onNavigateToRegister && (
             <TouchableOpacity
@@ -162,5 +205,29 @@ const styles = StyleSheet.create({
   registerLinkTextBold: {
     color: '#2196F3',
     fontWeight: '600',
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 24,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#e0e0e0',
+  },
+  dividerText: {
+    marginHorizontal: 12,
+    color: '#999',
+    fontSize: 14,
+  },
+  googleButtonContainer: {
+    width: '100%',
+    alignItems: 'center',
+  },
+  googleButton: {
+    width: '100%',
+    height: 56,
+    borderRadius: 12,
   },
 });

@@ -12,13 +12,22 @@ datasource db {
 
 // User model
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String   // Hashed with bcrypt
-  name      String
+  id           String       @id @default(cuid())
+  email        String       @unique
+  password     String       // Hashed with bcrypt (random for OAuth users)
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  // Profile information
+  name         String
+  firstName    String?
+  lastName     String?
+  profilePhoto String?      // URL to profile photo (future feature)
+
+  // Auth provider tracking
+  authProvider AuthProvider @default(EMAIL)
+  googleId     String?      // Google user ID for OAuth users
+
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
 
   // Relations
   transactions Transaction[]
@@ -64,4 +73,10 @@ enum DataSource {
   EMAIL        // Parsed from email (Phase 3)
   OCR          // Scanned receipt (Phase 3)
   VOICE        // Voice input (Phase 3)
+}
+
+enum AuthProvider {
+  EMAIL        // Email/password authentication
+  GOOGLE       // Google OAuth
+  LINKED       // Account has both email/password and Google linked
 }

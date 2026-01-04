@@ -12,7 +12,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
-import Icon from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { PieChart } from 'react-native-chart-kit';
 import Share from 'react-native-share';
 import { apiService } from '../services/api';
@@ -43,11 +43,7 @@ interface User {
   email: string;
 }
 
-interface StatsScreenProps {
-  onLogout?: () => void;
-}
-
-export const StatsScreen = ({ onLogout }: StatsScreenProps) => {
+export const StatsScreen = () => {
   const isFocused = useIsFocused();
   const [stats, setStats] = useState<Stats | null>(null);
   const [user, setUser] = useState<User | null>(null);
@@ -85,29 +81,6 @@ export const StatsScreen = ({ onLogout }: StatsScreenProps) => {
   const handleRefresh = () => {
     setRefreshing(true);
     loadData();
-  };
-
-  const handleLogout = async () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await apiService.logout();
-              onLogout?.();
-            } catch (error: any) {
-              const message = error.response?.data?.message || 'Failed to logout. Please try again.';
-              Alert.alert('Logout Failed', message);
-            }
-          },
-        },
-      ]
-    );
   };
 
   const handleExportData = async () => {
@@ -176,24 +149,17 @@ export const StatsScreen = ({ onLogout }: StatsScreenProps) => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* Header with user name and logout */}
+      {/* Header with user name and export */}
       <View style={styles.header}>
         <View>
           <Text style={styles.greeting}>Hello!</Text>
           <Text style={styles.userName}>{user?.name || 'User'}</Text>
         </View>
-        <View style={styles.headerButtons}>
-          <TouchableOpacity
-            style={styles.exportButton}
-            onPress={handleExportData}>
-            <Icon name="download-outline" size={22} color="#2196F3" />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.logoutButton}
-            onPress={handleLogout}>
-            <Icon name="log-out-outline" size={22} color="#F44336" />
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity
+          style={styles.exportButton}
+          onPress={handleExportData}>
+          <Ionicons name="download-outline" size={22} color="#2196F3" />
+        </TouchableOpacity>
       </View>
 
       <ScrollView
@@ -335,14 +301,7 @@ const styles = StyleSheet.create({
     color: '#000',
     marginTop: 2,
   },
-  headerButtons: {
-    flexDirection: 'row',
-    gap: 8,
-  },
   exportButton: {
-    padding: 8,
-  },
-  logoutButton: {
     padding: 8,
   },
   container: {
