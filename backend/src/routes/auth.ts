@@ -37,28 +37,52 @@ router.post('/register', async (req, res, next) => {
 
     // Check if user exists
     const existing = await prisma.user.findUnique({ where: { email } });
-    if (existing) {
-      throw new AppError(400, 'Email already registered');
-    }
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user with EMAIL provider
-    const user = await prisma.user.create({
-      data: {
-        email,
-        password: hashedPassword,
-        name,
-        authProvider: 'EMAIL',
-      },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        createdAt: true,
-      },
-    });
+    let user;
+    let accountLinked = false;
+
+    if (existing) {
+      // If Google account exists, link it with password
+      if (existing.authProvider === 'GOOGLE') {
+        user = await prisma.user.update({
+          where: { id: existing.id },
+          data: {
+            password: hashedPassword,
+            authProvider: 'LINKED',
+            name: name || existing.name, // Keep existing name if not provided
+          },
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            createdAt: true,
+          },
+        });
+        accountLinked = true;
+      } else {
+        // Email or linked account already exists with password
+        throw new AppError(400, 'Email already registered');
+      }
+    } else {
+      // Create new user with EMAIL provider
+      user = await prisma.user.create({
+        data: {
+          email,
+          password: hashedPassword,
+          name,
+          authProvider: 'EMAIL',
+        },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          createdAt: true,
+        },
+      });
+    }
 
     // Generate JWT token
     const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET!, {
@@ -67,7 +91,7 @@ router.post('/register', async (req, res, next) => {
 
     res.status(201).json({
       status: 'success',
-      data: { user, token },
+      data: { user, token, accountLinked },
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
